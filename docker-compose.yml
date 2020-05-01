@@ -1,0 +1,40 @@
+version: "3"
+services:
+  backend:
+    build: ./backend
+    container_name: 'crypto_back'
+    command: sh -c 'python app.py'
+    ports:
+      - '5000:5000'
+    volumes:
+      - ./backend:/backend
+    depends_on:
+      - "db_crypto"
+      - "db2_crypto2"
+
+    
+  db_crypto:
+    container_name: 'db_crypto'
+    image: mongo
+    ports:
+      - '27017:27017'
+    
+  db2_crypto2:
+    container_name: 'db2_crypto2'
+    image: mongo
+    ports:
+      - '27018:27017'
+      
+  frontend:
+    build: ./frontend
+    container_name: 'crypto_frontend'
+    command: sh -c 'npm install; npm start'
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontend:/frontend
+    depends_on:
+      - "backend"
+      
+    stdin_open: true
+    tty: true
