@@ -23,7 +23,7 @@ services:
     container_name: 'db2_crypto2'
     image: mongo
     ports:
-      - '27018:27017'
+      - '27018:27018'
       
   frontend:
     build: ./frontend

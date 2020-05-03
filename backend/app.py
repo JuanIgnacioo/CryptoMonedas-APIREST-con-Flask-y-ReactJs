@@ -12,27 +12,24 @@ from hasheo import hasheo_base, hashear
 app = Flask(__name__)
 CORS(app)
 
-#ruta para inicializar las bases de datos
-@app.route('/inicializar_bases', methods=['GET'])
-def inicializar_bases():
-    if request.method == 'GET':
-        db = inicializar_base1()
-        db.cryp.drop()#borramos si contenia alguna info
-        data = get_data()
-        #print(data)
-        db.cryp.insert_many(data) # inserto los datos en la bd1
-
-        data = db.cryp.find({},{"_id":0})#obtener datos de la bd1
-       
-        hash_data = hasheo_base(data) #hashear la data para meterla en la bdd aux
-        #print(hash_data)
-        db2 = inicializar_base2()
-        db2.cryp.drop()
-        db2.cryp.insert_many(hash_data)#metemos la data hasheada en la bdd2
-        return 'ok'
+#Funcion para inicializar bases
+def inicializar_bases():    
+    db = inicializar_base1()
+    db.cryp.drop()#borramos si contenia alguna info
+    data = get_data()
+    #print(data)
+    db.cryp.insert_many(data) # inserto los datos en la bd1
+    data = db.cryp.find({},{"_id":0})#obtener datos de la bd1       
+    hash_data = hasheo_base(data) #hashear la data para meterla en la bdd aux
+    #print(hash_data)
+    db2 = inicializar_base2()
+    db2.cryp.drop()
+    db2.cryp.insert_many(hash_data)#metemos la data hasheada en la bdd2
+    print('ok')
  
+ #inicializamos cuando arranca la app
 
-
+inicializar_bases()
 
 def validacionDos (item,db2): # validacion para buscar x  id
     aux = False
@@ -45,18 +42,36 @@ def validacionDos (item,db2): # validacion para buscar x  id
     
     return aux
 
-@app.route('/obtenerSegunId', methods =['GET']) #obtener una criptomoneda segun el id
+@app.route('/obtenerSegunId', methods =['POST']) #obtener una criptomoneda segun el id
 def obtenerSegunId():
-    if request.method == 'GET':
-        id = request.args['id']
-        #print(id)
-        db = inicializar_base1()
-        db2 = inicializar_base2()
-        aux = db.cryp.find_one({"id": str(id)}, {"_id": 0})
-        #print(aux)
-        if (aux != None) and (validacionDos(aux,db2) == False):
-            print('error info')
-        return jsonify(aux)
+    try:
+        if request.method == 'POST':
+            id = request.json['id']
+            #print(id)
+            db = inicializar_base1()
+            db2 = inicializar_base2()
+            aux = db.cryp.find_one({"id": str(id)}, {"_id": 0})
+            #print(res)
+            if (aux != None) and (validacionDos(aux,db2) == False):
+                raise Exception ('error info')
+            return jsonify(aux)
+    except (Exception) as err:
+        return str(err), 500
+
+
+
+@app.route('/borrarCrypto', methods=['POST'])
+def borrarCrypto():
+    try:        
+        if request.method == 'POST':
+            rank = request.json['rank']
+            db = inicializar_base1()
+            db2 = inicializar_base2()
+            db.cryp.delete_one({"cmc_rank":str(rank)})
+            db2.cryp.delete_one({"cmc_rank":str(rank)})
+            return "deleted"
+    except (Exception) as err:
+        return str(err), 500
    
 #---------------------------------------------
 def validacion (db1_cryp,db2): #validacion para cuando quiero obtener todas las cryptomonedas, #top 5 y top20                       
@@ -71,7 +86,7 @@ def validacion (db1_cryp,db2): #validacion para cuando quiero obtener todas las 
             
     return aux
 
-@app.route('/listarTodasCrypto', methods=['GET'])
+@app.route('/listarTodasCrypto', methods=['GET']) #funciona
 def listarTodasCrypto():
     if request.method == 'GET':
         db = inicializar_base1()
@@ -84,7 +99,7 @@ def listarTodasCrypto():
         return jsonify(aux)
 
 
-@app.route('/top5', methods=['GET'])
+@app.route('/top5', methods=['GET']) #funciona
 def top5():
     if request.method == 'GET':
         db = inicializar_base1()
@@ -97,7 +112,7 @@ def top5():
             print('informacion erronea')
         return jsonify(aux)
 
-@app.route('/top20', methods=['GET'])
+@app.route('/top20', methods=['GET']) # funciona
 def top20():
     if request.method == 'GET':
         db = inicializar_base1()
@@ -111,5 +126,6 @@ def top20():
         return jsonify(aux)
 
 
-if __name__ == ' __main__':
+
+if __name__ == '__main__':
     app.run(host='backend', port ='5000', debug=True)
